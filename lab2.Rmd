@@ -77,12 +77,12 @@ G <- matrix(c(1, 1, 1, 0, 0, 0, 0,
 H <- t(matrix(c(1, 0, 1, 0, 1, 0, 1,
 		0, 1, 1, 0, 0, 1, 1,
 		0, 0, 0, 1, 1, 1, 1), nrow = 3, byrow = TRUE))
-# cat("The matrix G is: \n") 
-#G  
-#cat("The matrix H is: \n") 
-#H
-#cat("The product GH must be zero: \n")
-#(G%*%H) %%2
+cat("The matrix G is: \n") 
+G  
+cat("The matrix H is: \n") 
+H
+cat("The product GH must be zero: \n")
+(G%*%H) %%2
 ```
 
 #### Next, generate the messages
@@ -100,14 +100,109 @@ codewords <- (messages %*% G) %% 2
 #### Generate random errors; do not forget that they occur with probability $p$! Next, generate the received messages
 
 ```{r}
-#  errors <- ...
-#  received <-   
+N <- nrow(messages)
+n_bits <- ncol(G)
+
+# кожен біт пошкоджується незалежно з імовірністю p
+errors <- matrix(rbinom(N * n_bits, 1, p), nrow = N, ncol = n_bits)
+
+# накладаємо помилки на кодові слова (XOR по модулю 2)
+received <- (codewords + errors) %% 2
+
+# перевіримо перші кілька рядків
+head(errors)
+head(received)
 ```
 
-The next steps include detecting the errors in the received messages, correcting them, and then decoding the obtained messages. After this, you can continue with calculating all the quantities of interest
+### Subtask 1
 
-**Do not forget to include several sentences summarizing your work and the conclusions you have made!**
+```{r}
+# syndrome calculation
+syndromes <- (received %*% H) %% 2
 
+# all possible single-bit errors
+error_patterns <- diag(7)
+
+# синдроми для кожного з них
+syndrome_table <- (error_patterns %*% H) %% 2
+
+# додаємо випадок "нема помилки"
+syndrome_table <- rbind(rep(0,3), syndrome_table)
+
+corrected <- received  # створюємо копію для виправлення
+
+for (i in 1:nrow(received)) {
+  s <- syndromes[i, ]
+  # знаходимо індекс рядка в syndrome_table, який збігається з s
+  match_idx <- which(apply(syndrome_table, 1, function(row) all(row == s))) - 1
+  if (length(match_idx) == 1 && match_idx > 0) {
+    # flip the corresponding bit
+    corrected[i, match_idx] <- (corrected[i, match_idx] + 1) %% 2
+  }
+}
+
+decoded <- corrected[, 1:4]
+
+# обудова таблиці всіх кодових слів (16 можливих)
+all_msgs <- as.matrix(expand.grid(0:1, 0:1, 0:1, 0:1))
+all_code <- (all_msgs %*% G) %% 2
+
+# допоміжна функція: робить рядок "0101010" для порівняння
+key <- function(M) apply(M, 1, paste0, collapse = "")
+
+# створюємо "словник" кодових слів -> повідомлень
+dict_keys <- key(all_code)
+
+# --- після виправлення помилок ---
+recv_keys <- key(corrected)
+idx <- match(recv_keys, dict_keys)
+
+# декодовані повідомлення за знайденими індексами
+decoded <- all_msgs[idx, , drop = FALSE]
+
+success <- rowSums(decoded == messages) == 4
+p_hat <- mean(success)
+cat("Estimated probability of correct transmission (p_hat):", p_hat, "\n")
+
+```
+
+here will be description and comments for 1.
+
+### Subtask 2:
+
+```{r}
+N <- nrow(messages)                           # кількість симуляцій
+SE <- sqrt(p_hat * (1 - p_hat) / N)           # стандартна похибка
+epsilon <- 1.96 * SE                          # напівдовжина 95% ДІ
+CI <- c(p_hat - epsilon, p_hat + epsilon)
+
+cat(sprintf("p_hat = %.5f\n", p_hat))
+cat(sprintf("SE     = %.6f\n", SE))
+cat(sprintf("95%% CI = (%.5f, %.5f)\n", CI[1], CI[2]))
+
+```
+
+Comments for subtask 2 ...
+
+### Subtask3
+
+```{r}
+eps_target <- 0.03
+
+# плагін-оцінка за поточним p_hat
+N <- ceiling( (1.96^2 * p_hat * (1 - p_hat)) / eps_target^2 )
+
+cat(sprintf("N >= %d\n", N))
+
+```
+
+comments for subtask 3 ...
+
+### Visualization
+
+```{r}
+
+```
 ------------------------------------------------------------------------
 
 ### Task 2.
