@@ -1,6 +1,6 @@
 ---
 title: 'P&S-2022: Lab assignment 2'
-author: "Name1, Name2, Name3"
+author: "Yustyna Hayevska, Andrii Kulbaba, Ostap Kostiuk"
 output:
   html_document:
     df_print: paged
@@ -65,7 +65,7 @@ $$
 ```{r}
 # your team id number 
                           ###
-id <- 50                  ### Change to the correct id!
+id <- 4                  ### Change to the correct id!
                           ###
 set.seed(id)
 p <- id/100
@@ -171,16 +171,16 @@ curve(pnorm(x, mean = mu, sd = sigma), col = "red", lwd = 2, add = TRUE)
 
 #### In this task, we use the Central Limit Theorem approximation for continuous random variables.
 
-#### One of the devices to measure radioactivity level at a given location is the Geiger counter. When the radioactive level is almost constant, the time between two consecutive clicks of the Geiger counter is an exponentially distributed random variable with parameter $\nu_1 = \mathtt{team\,id\,number} + 10$. Denote by $X_k$ the random time between the $(k-1)^{\mathrm{st}}$ and $k^{\mathrm{th}}$ click of the counter.
+#### One of the devices to measure radioactivity level at a given location is the Geiger counter. When the radioactive level is almost constant, the time between two consecutive clicks of the Geiger counter is an exponentially distributed random variable with parameter $\nu_1 = 14$. Denote by $X_k$ the random time between the $(k-1)^{\mathrm{st}}$ and $k^{\mathrm{th}}$ click of the counter.
 
 1.  Show that the distribution of the sample means of $X_1, X_2,\dots,X_n$ gets very close to a normal one (which one?) as $n$ becomes large. To this end,
-    -   simulate the realizations $x_1,x_2,\dots,x_n$ of the \textbf{r.v.} $X_i$ and calculate the sample mean $s=\overline{\mathbf{x}}$;\
-    -   repeat this $K$ times to get the sample $\mathbf{s}=(s_1,\dots,s_K)$ of means and then the \emph{empirical cumulative distribution} function $F_{\mathbf{s}}$ of $\mathbf{s}$;\
-    -   identify $\mu$ and $\sigma^2$ such that the \textbf{c.d.f.} of $\mathscr{N}(\mu,\sigma^2)$ is close to the \textbf{e.c.d.f.} $F_{\mathbf{s}}$ of and plot both \textbf{c.d.f.}'s on one graph to visualize their proximity;\
-    -   calculate the maximal difference between the two \textbf{c.d.f.}'s;\
+    -   simulate the realizations $x_1,x_2,\dots,x_n$ of the r.v. $X_i$ and calculate the sample mean $s=\overline{\mathbf{x}}$;\
+    -   repeat this $K$ times to get the sample $\mathbf{s}=(s_1,\dots,s_K)$ of means and then the empirical cumulative distribution function $F_{\mathbf{s}}$ of $\mathbf{s}$;\
+    -   identify $\mu$ and $\sigma^2$ such that the c.d.f. of $\mathscr{N}(\mu,\sigma^2)$ is close to the e.c.d.f. $F_{\mathbf{s}}$ of and plot both c.d.f.'s on one graph to visualize their proximity;\
+    -   calculate the maximal difference between the two c.d.f.'s;\
     -   consider cases $n = 5$, $n = 10$, $n=50$ and comment on the results.
 2.  The place can be considered safe when the number of clicks in one minute does not exceed $100$. It is known that the parameter $\nu$ of the resulting exponential distribution is proportional to the number $N$ of the radioactive samples, i.e., $\nu = \nu_1*N$, where $\nu_1$ is the parameter for one sample. Determine the maximal number of radioactive samples that can be stored in that place so that, with probability $0.95$, the place is identified as safe. To do this,
-    -   express the event of interest in terms of the \textbf{r.v.} $S:= X_1 + \cdots + X_{100}$;\
+    -   express the event of interest in terms of the r.v.} $S:= X_1 + \cdots + X_{100}$;\
     -   obtain the theoretical bounds on $N$ using the Markov inequality, Chernoff bound and Central Limit Theorem and compare the results;\
     -   with the predicted $N$ and thus $\nu$, simulate the realization $x_1,x_2,\dots,x_{100}$ of the $X_i$ and of the sum $S = X_1 + \cdots + X_{100}$;\
     -   repeat this $K$ times to get the sample $\mathbf{s}=(s_1,\dots,s_K)$ of total times until the $100^{\mathrm{th}}$ click;\
@@ -189,35 +189,117 @@ curve(pnorm(x, mean = mu, sd = sigma), col = "red", lwd = 2, add = TRUE)
 #### First, generate samples an sample means:
 
 ```{r}
-nu1 <- 1  # change this!
+nu1 <- 14
 K <- 1e3
-n <- 5
+n <- 5 #change 10, 50
 sample_means <- colMeans(matrix(rexp(n*K, rate = nu1), nrow=n))
 ```
 
 #### Next, calculate the parameters of the standard normal approximation
 
 ```{r}
-mu <- 0       # change this!
-sigma <- 1    # change this!
+mu <- 1/nu1 #teoretical
+sigma <- 1/(sqrt(n)*nu1) # var(sample mean)
 ```
 
 #### We can now plot ecdf and cdf
 
 ```{r}
-xlims <- c(mu-3*sigma,mu+3*sigma)
+xlims <- c(mu-3*sigma,mu+3*sigma) # 99.7% of data in mu +- 3sigma in normal dist.
+
 Fs <- ecdf(sample_means)
 plot(Fs, 
      xlim = xlims, 
      col = "blue",
      lwd = 2,
      main = "Comparison of ecdf and cdf")
+
 curve(pnorm(x, mean = mu, sd = sigma), col = "red", lwd = 2, add = TRUE)
+
+legend("bottomright", 
+       legend = c(paste("ECDF (n =", n, ")"), "Normal CDF"), 
+       col = c("blue", "red"), 
+       lwd = 2, 
+       cex = 0.8)
 ```
+
+**Calculate the maximal difference between the two c.d.f.'s**
+
+```{r}
+max_diff <- max(abs(Fs(sample_means)-pnorm(sample_means, mean = mu, sd = sigma)))
+cat("For n =", N, "maximal difference between the two c.d.f.'s =", max_diff)
+```
+
+For n = 5, 10, 50
+
+```{r}
+n_vals <- c(5, 10, 50)
+for (n in n_vals) {
+  sample_means <- colMeans(matrix(rexp(n*K, rate = nu1), nrow=n))
+  mu <- 1/nu1 #teoretical
+  sigma <- 1/(sqrt(n)*nu1) # var(sample mean)
+  Fs <- ecdf(sample_means)
+  plot(Fs, 
+       xlim = xlims, 
+       col = "blue",
+       lwd = 2,
+       main = "Comparison of ecdf and cdf")
+  
+  curve(pnorm(x, mean = mu, sd = sigma), col = "red", lwd = 2, add = TRUE)
+  
+  legend("bottomright", 
+         legend = c(paste("ECDF (n =", n, ")"), "Normal CDF"), 
+         col = c("blue", "red"), 
+         lwd = 2, 
+         cex = 0.8)
+}
+```
+
+Small n=5 shows skew and deviation; n=50 achieves near-perfect normality; demonstrates CLT's "large n" requirement, applicable for practical confidence intervals.
 
 **Next, proceed with all the remaining steps**
 
-**Do not forget to include several sentences summarizing your work and the conclusions you have made!**
+-   express the event of interest in terms of the r.v. $S:= X_1 + \cdots + X_{100}$;
+-   obtain the theoretical bounds on $N$ using the Markov inequality, Chernoff bound and Central Limit Theorem and compare the results;
+-   with the predicted $N$ and thus $\nu$, simulate the realization $x_1,x_2,\dots,x_{100}$ of the $X_i$ and of the sum $S = X_1 + \cdots + X_{100}$;
+-   repeat this $K$ times to get the sample $\mathbf{s}=(s_1,\dots,s_K)$ of total times until the $100^{\mathrm{th}}$ click;
+-   estimate the probability that the location is identified as safe and compare to the desired level $0.95$
+
+```{r}
+desired <- 0.95
+
+#Markov
+N_markov <- ceiling(100/(100*(1-desired)*nu1)) #3
+cat("Markov: N >=", N_markov, "\n")
+#CLT
+N_clt <- floor((100 + qnorm(1-desired)*sqrt(100))/(100*nu1)) #0
+cat("CLT: N <=", N_clt, "\n")
+#Chernoff
+N_chernoff <- 10#default -> 10, too big
+for (N in 1:10) {
+  nu <- nu1*N
+  bound <- exp(min*nu - 100) * (min*nu/100)^100
+  if (bound <= (1-desired)) {
+    N_chernoff <- N
+    break
+  }
+}
+cat("Chernoff: N <=", N_chernoff, "\n")
+#Predicted
+N_pred <- 2
+nu <- nu1*N_pred
+
+S_samples <- replicate(K, sum(rexp(100, rate = nu)))
+
+hist(S_samples, breaks = 30, col = "skyblue",
+     main = paste("Total Time Distribution (N =", N_pred, ")"),
+     xlab = "Seconds")
+
+safe_prob <- mean(S_samples <= 100) #???
+cat("Probability the location is safe: P =", round(safe_prob, 4), "\n")
+```
+
+Markov gives min N ≥ 2 (loose upper tail P(S \> 100) ≤ 0.05); Chernoff tighter for Poisson tail (max N ≤ 10, exponential decay); CLT normal approx for Poisson (max N ≤ 0 for large lambda); bounds conflict but indicate small N range, with simulations essential for high lambda=14.
 
 ------------------------------------------------------------------------
 
@@ -229,23 +311,61 @@ curve(pnorm(x, mean = mu, sd = sigma), col = "red", lwd = 2, add = TRUE)
 
     1.  Suppose we have a random variable $X$. Explain why $\mathbb{E}(\frac{1}{X}) \neq \frac{1}{\mathbb{E(X)}}$;
 
-    2.  Let $X \sim \mathscr{N}(\mu,\sigma^2)$ with $\mu = teamidnumber$ and $\sigma^{2} = 2\times teamidnumber+7$. Simulate realizations $x_1,x_2,\dots,x_{100}$ of $X$ and $y_1,y_2,\dots,y_{100}$ of $Y := \frac{1}{X}$ to calculate the values of $\frac{1}{\overline{\textbf{X}}}$ and $\overline{\textbf{Y}}$. Comment on the received results;
+Let P(X=1) = 0.5 and P(X=4) = 0.5 By definition E(X) = 0.5*1 + 0.5*4 = 0.5+2 = 2.5 1/E(X) = 1/2.5 = 10/25 = 0.4
 
-        ```{r}
-        mu <- 0 #change this!
-        sigma <- 1 #change this
-        N <- 100
+E(1/X) = 0.5*1 + 0.5*(1/4) = 0.5 + 0.125 = 0.625
 
-        # YOUR CODE HERE
-        ```
+0.625 != 0.4 =\> 1/E(X) != E(1/X)
 
-    3.  Let $X$ and $Y$ be exponentially distributed r.v.'s with parameter $\lambda = 2$. Set $Z := \log{X} + 5$. Plot the Quantile-Quantile plot and scatterplot of $X$ and $Y$. Plot the Quantile-Quantile plot and scatterplot of $X$ and $Z$. Explain the results. Comment on the difference of relations between the pairs of random variables. Which pair of r.v.'s is dependent and which one is similar?
+2.  Let $X \sim \mathscr{N}(\mu,\sigma^2)$ with $\mu = 4$ and $\sigma^{2} = 2\times 4+7$. Simulate realizations $x_1,x_2,\dots,x_{100}$ of $X$ and $y_1,y_2,\dots,y_{100}$ of $Y := \frac{1}{X}$ to calculate the values of $\frac{1}{\overline{\textbf{X}}}$ and $\overline{\textbf{Y}}$. Comment on the received results;
 
-        ```{r}
-        # YOUR CODE HERE
-        ```
+```{r}
+set.seed(4)
+mu <- 4
+sigma <- sqrt(2*4 + 7)
+N <- 100
 
-    ------------------------------------------------------------------------
+X <- rnorm(N, mean = mu, sd = sigma)
+Y <- 1/X
+one_over_X_ <- 1/mean(X)
+Y_ <- mean(Y)
+
+cat("1 / mean(X)", one_over_X_, "\n")
+cat("mean(Y):", Y_, "\n")
+```
+
+E(X) = 4, that's the reason 1/E(X) = 0.25; Due to our ID set.seed(4) and X is very close to 0 , which is why mean(Y) is so large.
+
+3.  Let $X$ and $Y$ be exponentially distributed r.v.'s with parameter $\lambda = 2$. Set $Z := \log{X} + 5$. Plot the Quantile-Quantile plot and scatterplot of $X$ and $Y$. Plot the Quantile-Quantile plot and scatterplot of $X$ and $Z$. Explain the results. Comment on the difference of relations between the pairs of random variables. Which pair of r.v.'s is dependent and which one is similar?
+
+```{r}
+lambda <- 2
+N <- 100
+
+set.seed(4)
+#X,Y - i.i.d. r.v. with Exp(2)
+X <- rexp(N, rate = lambda)
+Y <- rexp(N, rate = lambda)
+Z <- log(X) + 5
+
+# Q.Q.-plot X,Y
+qqplot(X, Y, main = "Q.Q.-plot: X,Y (Exp(2))", xlab = "X quantile", ylab = "Y quantile")
+abline(0, 1, col = "red", lty = 2)
+
+# Scatterplot X,Y
+plot(X, Y, main = "Scatterplot: X,Y", xlab = "X", ylab = "Y")
+abline(0, 1, col = "red", lty = 2)
+
+# Q.Q.-plot X,Z
+qqplot(X, Z, main = "Q.Q.-plot X,Z", xlab = "X quantile", ylab = "Y quantile")
+abline(0, 1, col = "red", lty = 2)
+
+# Scatterplot X,Z
+plot(X, Z, main = "Scatterplot X,Z", xlab = "X", ylab = "Z")
+curve(log(x) + 5, from = min(X), to = max(X), add = TRUE, col = "red", lwd = 2)
+```
+
+Similarity doesn't require dependence. Z = g(X) induces both correlation and distributional shifts. X, Y are independent and similar; X, Z are dependent and dissimilar.
 
 2.  You toss a fair coin three times and a random variable $X$ records how many times the coin shows Heads. You convince your friend that they should play a game with the following payoff: every round (equivalent to three coin tosses) will cost £$1$. They will receive £$0.5$ for every coin showing Heads. What is the expected value and the variance of the random variable $Y := 0.5X-1$?
 
@@ -261,19 +381,46 @@ curve(pnorm(x, mean = mu, sd = sigma), col = "red", lwd = 2, add = TRUE)
 
         -   Uniformly distributed
 
+    X = number of heads, coin is tossed 3 times. When we have specific probability 1 or 0 and number of tosses, then it's Binomial distribution, Binomial(n = 3, p = 1/2).
+
     2.  What are the expected value and variance of X? Simulate realizations $x_1,x_2,\dots,x_{100}$ of $X$ to calculate the values of sample mean $\overline{\mathbf{X}}$ and sample variance $s^2 = \frac{\sum_{i=1}^{n}{(x_i - \overline{x})^{2}}}{n-1}$. Comment on the results;
 
-        ```{r}
-        # YOUR CODE HERE
-        ```
+```{r}
+N <- 100
+set.seed(4)
+X <- rbinom(N, size = 3, prob=0.5)
 
-    3.  What are the expected value and variance of Y? Simulate realizations $y_1,y_2,\dots,y_{100}$ of $Y$ to calculate the values of sample mean $\overline{\mathbf{Y}}$ and sample variance $s^2 = \frac{\sum_{i=1}^{n}{(y_i - \overline{y})^{2}}}{n-1}$. Comment on the results;
+teor_exp_x <- 3*0.5
+teor_var_x <- 3*0.5*(1-0.5)
+cat("Teoretical Expectation of X =", teor_exp_x, "\n")
+cat("Teoretical Variance of X =", teor_var_x, "\n\n")
 
-        ```{r}
-        # YOUR CODE HERE
-        ```
+sample_mean_x <- mean(X)
+sample_var_X <- var(X)
+cat("Sample mean of X =", sample_mean_x, "\n")
+cat("Sample variance of X =", sample_var_X, "\n")
+```
 
-**Do not forget to include several sentences summarizing your work and the conclusions you have made!**
+Sample values are very close to the theoretical ones, as expected for N=100 samples from a binomial (convergence by law of large numbers).
+
+3.  What are the expected value and variance of Y? Simulate realizations $y_1,y_2,\dots,y_{100}$ of $Y$ to calculate the values of sample mean $\overline{\mathbf{Y}}$ and sample variance $s^2 = \frac{\sum_{i=1}^{n}{(y_i - \overline{y})^{2}}}{n-1}$. Comment on the results;
+
+```{r}
+Y <- 0.5*X - 1
+
+
+teor_exp_y <- 0.5*teor_exp_x -1
+teor_var_y <- 0.5^2 *teor_var_x
+cat("Teoretical Expectation of Y =", teor_exp_y, "\n")
+cat("Teoretical Variance of Y =", teor_var_y, "\n\n")
+
+sample_mean_y <- mean(Y)
+sample_var_y <- var(Y)
+cat("Sample mean of Y =", sample_mean_y, "\n")
+cat("Sample variance of Y =", sample_var_y, "\n")
+```
+
+Again, sample close to theoretical. The negative mean shows expected loss, while low variance indicates stable outcomes.
 
 ------------------------------------------------------------------------
 
