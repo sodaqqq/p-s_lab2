@@ -331,7 +331,6 @@ P(S_n \ge a) \le \frac{\mathbb{E}[S_n]}{a} = \frac{n\mu}{a}
 n_{\mathrm{Markov}} = \left\lfloor \frac{\alpha a}{\mu} \right\rfloor,
 \quad\text{for }P(S_n \le a)\ge 1-\alpha.
 $$
-
 ```{r}
 
 a <- 8e8
@@ -342,19 +341,18 @@ alpha <- 0.05
 # n = a * aplha/mu
 
 find_markov <- function(a, mu_poisson, alpha) {
-  return(floor(alpha * a / mu_poisson))
-}
+  return(floor(alpha * a / mu_poisson))}
+
 ```
 
-\$\$
+$$
+P(S_n \ge a) \le \inf{s>0} e^{-s a} M{S_n}(s) = \inf_{s>0} \exp\big( -s a + n\mu(e^s-1)\big)
+$$ $$
+\text{Solving for equality with level \(\alpha\) gives}$$ $$
+-s a + n\mu(e^s-1) = \ln\alpha \quad\Rightarrow\quad n = \frac{\ln\alpha + s a}{\mu(e^s-1)},
+$$
 
-P(S_n \ge a) \le \inf\*{s\\\>0} e\^{-s a} , M\*{S_n}(s) = \inf\_{s\>0} \exp\big( -s a + n\mu(e\^s-1)\big)
-
-\text{Solving for equality with level \(\alpha\) gives}
-
-[ -s a + n\mu(e\^s-1) = \ln\alpha \quad\Rightarrow\quad n = \frac{\ln\alpha + s a}{\mu(e^s-1)},] and the Chernoff bound is the maximum integer $n$ obtained by optimizing over $s>0$.
-
-\$\$
+and the Chernoff bound is the maximum integer $n$ obtained by optimizing over $s>0$.
 
 ```{r}
 # chernov. We are looking for bound <= alpha
@@ -390,22 +388,26 @@ find_n_chernov <- function(a, mu_poisson , alpha) {
 ```
 
 $$
-\[
 P(S_n \le a) \approx \Phi\!\left(\frac{a - n\mu}{\sqrt{n\mu}}\right),
-\]
-where \(\Phi\) is the standard normal c.d.f. Setting this equal to \(1-\alpha\) and solving gives
-\[
+$$
+
+where $\Phi$ is the standard normal c.d.f. Setting this equal to $1-\alpha$ and solving gives
+
+$$
 \frac{a - n\mu}{\sqrt{n\mu}} = z_{1-\alpha},\qquad z_{1-\alpha}=\Phi^{-1}(1-\alpha).
-\]
-Let \(y=\sqrt{n\mu}\). Then \(\dfrac{a-y^2}{y}=z_{1-\alpha}\), so
-\[
+$$
+
+Let $y=\sqrt{n\mu}$. Then $\dfrac{a-y^2}{y}=z_{1-\alpha}$, so
+
+$$
 y^2 + z_{1-\alpha}\,y - a = 0,\qquad
 y = \frac{-z_{1-\alpha} + \sqrt{z_{1-\alpha}^2 + 4a}}{2},
-\]
+$$
+
 and the CLT-based approximation is
-\[
+
+$$
 n_{\mathrm{CLT}} \approx \frac{1}{\mu}\left(\frac{-z_{1-\alpha} + \sqrt{z_{1-\alpha}^2 + 4a}}{2}\right)^2.
-\]
 $$
 
 ```{r}
@@ -459,6 +461,10 @@ print(data.frame(n = window, empirical_P = res))
 
 
 ```
+
+#### Conlusion
+
+For the given parameters we obtain $\mu \approx 1.279\times 10^{7}$ decays per second per sample. The Markov inequality gives a very conservative bound $n_{\mathrm{Markov}}\approx 3$, while both the Chernoff bound and the CLT approximation give $n\approx 62$. Simulation of $S_n$ confirms this: $P(S_n\le 8\cdot 10^8)\approx 1$ for $n\le 62$ and drops to $\approx 0$ for $n\ge 63$; hence Chernoff/CLT produce realistic bounds in this large-mean Poisson regime whereas Markov is overly pessimistic.\
 
 \
 
