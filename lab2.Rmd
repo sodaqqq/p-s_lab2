@@ -231,7 +231,6 @@ theoretical <- dbinom(k_vals, size = 4, prob = p)
 
 ------------------------------------------------------------------------
 
-
 ### Task 2.
 
 In this task, we discuss a real-life process that is well modelled by a Poisson distribution. As you remember, a Poisson random variable describes occurrences of rare events, i.e., counts the number of successes in a large number of independent random experiments. One of the typical examples is the **radioactive decay** process.
@@ -248,7 +247,7 @@ Assume that a medical laboratory receives $n$ samples of radioactive element ${{
     -   calculate the maximal difference between the two \textbf{c.d.f.}'s;
     -   consider cases $n = 5$, $n = 10$, $n=50$ and comment on the results.\
 3.  Calculate the largest possible value of $n$, for which the total number of decays in one second is less than $8 \times 10^8$ with probability at least $0.95$. To this end,
-    -   obtain the theoretical bound on $n$ using Markov inequality, Chernoff bound and Central Limit Theorem, and compare the results;
+    -   obtain the theoretical bound on $n$ using Markov inequality, chernov bound and Central Limit Theorem, and compare the results;
     -   simulate the realization $x_1,x_2,\dots,x_n$ of the $X_i$ and calculate the sum $s=x_1 + \cdots +x_n$;
     -   repeat this $K$ times to get the sample $\mathbf{s}=(s_1,\dots,s_K)$ of sums;
     -   calculate the number of elements of the sample which are less than critical value ($8 \times 10^8$) and calculate the empirical probability; comment whether it is close to the desired level $0.95$
@@ -326,6 +325,13 @@ mu_poisson <- N * lambda
 
 ```
 
+$$
+P(S_n \ge a) \le \frac{\mathbb{E}[S_n]}{a} = \frac{n\mu}{a}
+\quad\Rightarrow\quad
+n_{\mathrm{Markov}} = \left\lfloor \frac{\alpha a}{\mu} \right\rfloor,
+\quad\text{for }P(S_n \le a)\ge 1-\alpha.
+$$
+
 ```{r}
 
 a <- 8e8
@@ -338,19 +344,28 @@ alpha <- 0.05
 find_markov <- function(a, mu_poisson, alpha) {
   return(floor(alpha * a / mu_poisson))
 }
+```
 
+\$\$
 
+P(S_n \ge a) \le \inf\*{s\\\>0} e\^{-s a} , M\*{S_n}(s) = \inf\_{s\>0} \exp\big( -s a + n\mu(e\^s-1)\big)
 
+\text{Solving for equality with level \(\alpha\) gives}
 
-# Chernoff. We are looking for bound <= alpha
+[ -s a + n\mu(e\^s-1) = \ln\alpha \quad\Rightarrow\quad n = \frac{\ln\alpha + s a}{\mu(e^s-1)},] and the Chernoff bound is the maximum integer $n$ obtained by optimizing over $s>0$.
+
+\$\$
+
+```{r}
+# chernov. We are looking for bound <= alpha
 # MGF of Poiison -> exp[lambda(e^{t}-1)], so
 # lamda = mu_poisson = var_poisson
-# We minimise the upper bound of the Chernoff and find the e^{t}=a/(nμ)
+# We minimise the upper bound of the chernov and find the e^{t}=a/(nμ)
 # so, it will be the optimal value for x
 # we calculate the
 
-find_n_chernoff <- function(a, mu_poisson , alpha) {
-# Chernoff inequality
+find_n_chernov <- function(a, mu_poisson , alpha) {
+# chernov inequality
 # P(X => a) <= e^-sa*M(s)
 # P(X >= 8a8) <= 0.05
 # e^-s*8e8*M(s) = 0.05
@@ -372,7 +387,28 @@ find_n_chernoff <- function(a, mu_poisson , alpha) {
   return(best_n)
 }
 
+```
 
+$$
+\[
+P(S_n \le a) \approx \Phi\!\left(\frac{a - n\mu}{\sqrt{n\mu}}\right),
+\]
+where \(\Phi\) is the standard normal c.d.f. Setting this equal to \(1-\alpha\) and solving gives
+\[
+\frac{a - n\mu}{\sqrt{n\mu}} = z_{1-\alpha},\qquad z_{1-\alpha}=\Phi^{-1}(1-\alpha).
+\]
+Let \(y=\sqrt{n\mu}\). Then \(\dfrac{a-y^2}{y}=z_{1-\alpha}\), so
+\[
+y^2 + z_{1-\alpha}\,y - a = 0,\qquad
+y = \frac{-z_{1-\alpha} + \sqrt{z_{1-\alpha}^2 + 4a}}{2},
+\]
+and the CLT-based approximation is
+\[
+n_{\mathrm{CLT}} \approx \frac{1}{\mu}\left(\frac{-z_{1-\alpha} + \sqrt{z_{1-\alpha}^2 + 4a}}{2}\right)^2.
+\]
+$$
+
+```{r}
 # CLT
 # The qnorm function provides the quantile of the normal distribution. We just calculete the cdf P(Z<=z), where Z<=0.95
 
@@ -391,46 +427,44 @@ find_n_clt <- function(a, mu_poisson ,alpha) {
   n_clt <- floor(y^2 / mu_poisson)
   return(n_clt)
 
-  }
-#-------
-empirical_prob_for_n <- function(n, mu_poisson, a, K = 5000) {
-  if (n <= 0) return(NA) # Return NA for n <= 0
-
-  # Use the property that the sum n*Pois(μ) -> Pois(n*μ)
-  mu_sum <- n * mu_poisson
-  sample_sums <- rpois(K, lambda = mu_sum)
-    return(mean(sample_sums <= a))
 }
 
-# Calculate theoretical n
+
+empirical_prob_for_n <- function(n, mu_poisson, a, K = 5000) {
+  if (n <= 0) return(NA_real_)
+  samples <- rpois(K, lambda = n * mu_poisson)
+  return(mean(samples <= a))
+}
+
+
+
 n_markov <- find_markov(a, mu_poisson, alpha)
-n_chernoff <- find_n_chernoff(a, mu_poisson, alpha)
+n_chernov <- find_n_chernov(a, mu_poisson, alpha)
 n_clt <- find_n_clt(a, mu_poisson, alpha)
 
-cat("--- Theoretical limits of n ---\n")
-print(list(n_markov = n_markov, n_chernoff = n_chernoff, n_clt = n_clt))
+cat("--- Theoretical bounds ---\n")
+cat("mu_poisson =", format(mu_poisson, digits = 12), "\n")
+cat("n_markov  =", n_markov, "\n")
+cat("n_chernov =", n_chernov, "\n")
+cat("n_clt     =", n_clt, "\n\n")
 
-# Create a vector of candidates
-K_sim <- 5000 # Number of simulations
-candidates <- seq(n_clt - 5, n_clt + 5)
-candidates <- candidates[candidates > 0] # Remove zeros or negatives
+# quick empirical diagnostics around n_clt
+K_sim <- 5000
+window <- seq(n_clt - 6, n_clt + 6)
+window <- window[window > 0]
+cat("Window around n_clt:\n")
+print(window)
+res <- sapply(window, function(n) empirical_prob_for_n(n, mu_poisson, a, K = K_sim))
+print(data.frame(n = window, empirical_P = res))
 
-cat("\nCheck candidates around n_clt (n=", n_clt, "):\n", sep="")
-print(candidates)
-results <- sapply(candidates, function(n_val) empirical_prob_for_n(n_val, mu_poisson, a, K = K_sim))
 
-final_table <- data.frame(n = candidates, P_Sn_le_a = results)
-
-cat("\n--- Final simulation table ---\n")
-print(final_table)
 ```
 
 \
 
 **Next, proceed with all the remaining steps**
 
-**Do not forget to include several sentences summarizing your work and the conclusions you have made!**
-------------------------------------------------------------------------
+## **Do not forget to include several sentences summarizing your work and the conclusions you have made!**
 
 ### Task 3.
 
@@ -446,7 +480,7 @@ print(final_table)
     -   consider cases $n = 5$, $n = 10$, $n=50$ and comment on the results.
 2.  The place can be considered safe when the number of clicks in one minute does not exceed $100$. It is known that the parameter $\nu$ of the resulting exponential distribution is proportional to the number $N$ of the radioactive samples, i.e., $\nu = \nu_1*N$, where $\nu_1$ is the parameter for one sample. Determine the maximal number of radioactive samples that can be stored in that place so that, with probability $0.95$, the place is identified as safe. To do this,
     -   express the event of interest in terms of the r.v.} $S:= X_1 + \cdots + X_{100}$;\
-    -   obtain the theoretical bounds on $N$ using the Markov inequality, Chernoff bound and Central Limit Theorem and compare the results;\
+    -   obtain the theoretical bounds on $N$ using the Markov inequality, chernov bound and Central Limit Theorem and compare the results;\
     -   with the predicted $N$ and thus $\nu$, simulate the realization $x_1,x_2,\dots,x_{100}$ of the $X_i$ and of the sum $S = X_1 + \cdots + X_{100}$;\
     -   repeat this $K$ times to get the sample $\mathbf{s}=(s_1,\dots,s_K)$ of total times until the $100^{\mathrm{th}}$ click;\
     -   estimate the probability that the location is identified as safe and compare to the desired level $0.95$
@@ -527,7 +561,7 @@ Small n=5 shows skew and deviation; n=50 achieves near-perfect normality; demons
 2\. The place can be considered safe when the number of clicks in one minute does not exceed $100$. It is known that the parameter $\nu$ of the resulting exponential distribution is proportional to the number $N$ of the radioactive samples, i.e., $\nu = \nu_1*N$, where $\nu_1$ is the parameter for one sample. Determine the maximal number of radioactive samples that can be stored in that place so that, with probability $0.95$, the place is identified as safe. To do this,
 
 -   express the event of interest in terms of the r.v. $S:= X_1 + \cdots + X_{100}$;
--   obtain the theoretical bounds on $N$ using the Markov inequality, Chernoff bound and Central Limit Theorem and compare the results;
+-   obtain the theoretical bounds on $N$ using the Markov inequality, chernov bound and Central Limit Theorem and compare the results;
 -   with the predicted $N$ and thus $\nu$, simulate the realization $x_1,x_2,\dots,x_{100}$ of the $X_i$ and of the sum $S = X_1 + \cdots + X_{100}$;
 -   repeat this $K$ times to get the sample $\mathbf{s}=(s_1,\dots,s_K)$ of total times until the $100^{\mathrm{th}}$ click;
 -   estimate the probability that the location is identified as safe and compare to the desired level $0.95$
@@ -542,19 +576,19 @@ max_clicks <- 100
 N_markov <- floor(max_clicks*curr_des /nu1)
 cat("Markov: N <=", N_markov, "\n")
 
-# Chernoff
-N_chernoff <- 0
+# chernov
+N_chernov <- 0
 for (n in 1:200) {
   curr <- nu1*n
   bound <- exp(-curr + max_clicks*log(curr/max_clicks) + max_clicks - lambda)
   if (bound <= curr_des) {
-    N_chernoff <- n
+    N_chernov <- n
   }
   else {
     break
   }
 }
-cat("Chernoff: N <=", N_chernoff, "\n")
+cat("chernov: N <=", N_chernov, "\n")
 
 # CLT
 N_clt <- 0
@@ -584,9 +618,9 @@ safe_prob <- mean(S_samples <= 100) # should be >= 0.95
 cat("Probability the location is safe: P =", round(safe_prob, 4), "\n")
 ```
 
-Based on the Markov, Chernoff, and CLT bounds the maximal number of radioactive samples that can safely be in the location, so that the chance of exceeding 100 clicks per minute is below 5%, is N = 6
+Based on the Markov, chernov, and CLT bounds the maximal number of radioactive samples that can safely be in the location, so that the chance of exceeding 100 clicks per minute is below 5%, is N = 6
 
-The Markov inequality is far too conservative. The Chernoff and CLT bounds are much tighter and consistent.
+The Markov inequality is far too conservative. The chernov and CLT bounds are much tighter and consistent.
 
 With N = 6 the probability of being safe is even slightly above the required 0.95.
 
