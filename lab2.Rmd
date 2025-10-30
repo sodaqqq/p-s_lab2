@@ -201,8 +201,29 @@ comments for subtask 3 ...
 ### Visualization
 
 ```{r}
+id <- 4
+set.seed(id)
+p <- id / 100
+N <- 100000
+
+errors <- matrix(rbinom(N * 4, 1, p), nrow = N, ncol = 4)
+k <- rowSums(errors)
+
+hist(k,
+     breaks = seq(-0.5, 4.5, 1),
+     freq = FALSE,
+     col = "skyblue",
+     border = "black",
+     main = sprintf("Number of bit errors in 4-bit message (p = %.2f)", p),
+     xlab = "Number of bit errors (k)",
+     ylab = "Probability")
+
+k_vals <- 0:4
+theoretical <- dbinom(k_vals, size = 4, prob = p)
+
 
 ```
+
 ------------------------------------------------------------------------
 
 ### Task 2.
