@@ -166,7 +166,7 @@ cat("Estimated probability of correct transmission (p_hat):", p_hat, "\n")
 
 ```
 
-here will be description and comments for 1.
+For N big enough, $\hat p$ is going to be equal to $p^*$, because by the Law of Large Numbers the mean of success indicators is going to be $E(I)$, which is equal to $p^*$.
 
 ### Subtask 2:
 
@@ -182,7 +182,12 @@ cat(sprintf("95%% CI = (%.5f, %.5f)\n", CI[1], CI[2]))
 
 ```
 
-Comments for subtask 2 ...
+So in this task we basically need to find such value $\hat p$, that $P(p^* - e <= \hat p <= p^* + e) = 0.95$\
+So, let $\hat p = Sn = (X1 + ... + Xn) / n$. $\mu(Sn) = \mu(Xi)$\
+Therefore $\sigma(Sn) = \sqrt(p^*(1-p^*))/n$\
+Solving the inequality: $P(-e <= \hat p - p^* <= e)$.\
+Divide by sigma: $P(-e/\sigma <= (\hat p - p^*)/\sigma <= e/\sigma)$\
+If we rewrite $(\hat p - p^*)/\sigma$ as some variable $z$, and make some transformations, we will eventually get, that $Ф(z) = 0.975$, value of which could be found by using qnorm (it is going to be 1.96). So the final formula is going to look like this: $1.96 * SE$, where SE is a Standard Error, which is equal to Standard Deviation, or in other words - $\sigma(Sn)$, which we have already found earlier.
 
 ### Subtask3
 
@@ -196,7 +201,7 @@ cat(sprintf("N >= %d\n", N))
 
 ```
 
-comments for subtask 3 ...
+Solution of this task is really simple, we just use the formula from subtask 2 to express N.
 
 ### Visualization
 
